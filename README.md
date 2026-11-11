@@ -1,5 +1,3 @@
-# Film-Runtime-Quality-Analysis-R
-R analysis of whether movie runtime affects audience reception, using TMDb film data from 2000–2024
 # Does Length Buy Quality? Runtime and Audience Reception in TMDb Film Data, 2000–2024
 
 An R analysis investigating whether a movie's runtime affects its audience reception, using TMDb film data from 2000 to 2024. This project was completed as part of my MSc coursework and scored 96/100.
