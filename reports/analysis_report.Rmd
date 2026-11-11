@@ -1,0 +1,344 @@
+---
+title: "Movie Data Analysis"
+author: "Sanika Gaikwad"
+date: "2026-07-27"
+output:
+  pdf_document: default
+  html_document: default
+---
+```{r setup, include=FALSE}
+library(dplyr)
+library(ggplot2)
+library(knitr)
+
+movies <- read.csv("../cache/movies_clean.csv")
+
+#-----------------------------------------
+# Cycle 1 Dataset
+#-----------------------------------------
+
+cycle1 <- movies %>%
+  filter(
+    revenue > 0,
+    budget > 0,
+    vote_average > 0
+  ) %>%
+  mutate(
+    ROI = revenue / budget
+  )
+
+# Top 10 Highest Revenue Movies
+top10 <- cycle1 %>%
+  arrange(desc(revenue)) %>%
+  select(
+    title,
+    budget,
+    revenue,
+    ROI,
+    vote_average
+  ) %>%
+  slice(1:10) %>%
+  mutate(
+    budget = format(
+      budget,
+      big.mark = ",",
+      scientific = FALSE
+    ),
+    revenue = format(
+      revenue,
+      big.mark = ",",
+      scientific = FALSE
+    ),
+    ROI = round(ROI, 2),
+    vote_average = round(vote_average, 2)
+  )
+
+#-----------------------------------------
+# Cycle 2 Dataset
+#-----------------------------------------
+
+cycle2 <- movies %>%
+  filter(
+    vote_average > 0,
+    runtime > 0,
+    popularity > 0
+  )
+
+# Top 10 Highest Rated Movies
+topRated <- cycle2 %>%
+  arrange(desc(vote_average)) %>%
+  select(
+    title,
+    vote_average,
+    popularity,
+    runtime
+  ) %>%
+  slice(1:10) %>%
+  mutate(
+    vote_average = round(vote_average, 2),
+    popularity = round(popularity, 2)
+  )
+
+# Correlation for Cycle 2
+ratingPopularity <- cor(
+  cycle2$vote_average,
+  cycle2$popularity,
+  use = "complete.obs"
+)
+```
+# 1. Introduction
+
+The global film industry generates substantial annual revenue through cinema releases, streaming platforms, and digital distribution services. As competition within the entertainment sector continues to increase, production companies are increasingly relying on historical data and analytics to support investment decisions, optimise production budgets, and improve the likelihood of commercial success. Data analytics enables organisations to identify meaningful patterns within historical datasets, providing evidence that can support strategic planning and reduce uncertainty when evaluating future film projects.
+
+The stakeholder for this investigation is the **Strategic Planning and Investment Team** within a movie production company. This team is responsible for evaluating potential film projects, allocating production budgets, and identifying characteristics that contribute to both commercial performance and positive audience reception. Reliable analytical evidence allows decision-makers to prioritise projects with stronger commercial potential while managing financial risk more effectively.
+
+This investigation uses movie data obtained from **The Movie Database (TMDb)**, covering films released between **2000 and 2024**. The dataset contains information relating to production budgets, box office revenue, popularity, runtime, and audience ratings, providing an opportunity to explore factors associated with movie success.
+
+The analysis follows the **Cross-Industry Standard Process for Data Mining (CRISP-DM)** methodology and consists of **two consecutive analytical cycles**. The first cycle investigates the relationship between production budget and box office revenue to understand commercial performance. Building upon these findings, the second cycle examines the relationship between audience ratings and movie popularity to explore factors influencing audience reception. The combined findings provide practical recommendations that can support future investment and production decisions within the organisation.
+
+# 2. Analytical Framework
+
+## 2.1 CRISP-DM Methodology
+
+This investigation adopts the **Cross-Industry Standard Process for Data Mining (CRISP-DM)** as the analytical framework. CRISP-DM is a widely recognised methodology that provides a structured and iterative approach for conducting data analytics projects. The framework consists of six phases: **Business Understanding, Data Understanding, Data Preparation, Modelling, Evaluation, and Deployment**. Rather than following a strictly linear sequence, CRISP-DM allows findings from one analytical cycle to inform subsequent investigations, making it particularly suitable for exploratory business analytics projects.
+
+The methodology was selected because it provides a logical structure for transforming raw movie data into meaningful business insights while ensuring that analytical findings remain aligned with organisational objectives. Furthermore, the iterative nature of CRISP-DM supports continuous learning throughout the project, allowing the second analytical cycle to build directly upon the findings obtained during the first cycle.
+
+## 2.2 Analytical Objectives
+
+Two consecutive CRISP-DM cycles were undertaken to address different business questions that are relevant to the stakeholder.
+
+**Cycle 1 – Commercial Performance**
+
+The first analytical cycle investigates whether production budget is associated with higher box office revenue. Understanding this relationship assists the organisation in evaluating investment decisions and identifying factors linked with commercial success.
+
+**Cycle 2 – Audience Reception**
+
+The second analytical cycle builds upon the findings of Cycle 1 by investigating whether audience ratings are associated with movie popularity. This analysis provides additional insight into audience preferences and highlights whether commercially visible movies also receive stronger audience evaluations.
+
+Together, these two analytical cycles provide complementary evidence to support strategic planning, production investment, and future decision-making within the organisation.
+
+# 3. CRISP-DM Cycle 1 – Commercial Performance Analysis
+
+## 3.1 Business Understanding
+
+The first analytical cycle investigates the factors influencing the commercial performance of movies. For the Strategic Planning and Investment Team, production budgets represent one of the largest financial commitments made during movie development. Understanding whether increased investment in production is associated with higher box office revenue can support evidence-based budgeting decisions and reduce financial uncertainty when selecting future projects.
+
+The primary business question addressed during this cycle is:
+
+> **To what extent is production budget associated with box office revenue?**
+
+Answering this question enables the stakeholder to evaluate whether larger production budgets are consistently linked with greater commercial returns and whether investment decisions should prioritise higher-budget productions.
+
+## 3.2 Data Understanding
+
+The analysis was conducted using the cleaned TMDb dataset containing movie records released between **2000 and 2024**. Following the data cleaning process, **7,395 movies** with complete production budget and box office revenue information were retained for analysis.
+
+The variables selected for this analytical cycle were chosen because they directly relate to the commercial performance of a movie. The key variables include:
+
+- **Budget** – the estimated production budget for each movie.
+- **Revenue** – the total worldwide box office revenue generated.
+- **Return on Investment (ROI)** – calculated to evaluate the financial return relative to the production budget.
+- **Release Year** – used to support data preparation and validation.
+
+Preliminary exploration indicated that the dataset contained a wide variation in production budgets and revenues, ranging from low-budget independent films to high-budget blockbuster productions. These differences suggest that the relationship between production budget and commercial success may not be perfectly linear and therefore requires further investigation through visualisation and statistical analysis.
+
+## 3.3 Data Preparation
+
+Prior to analysis, the dataset was preprocessed to improve data quality and ensure reliable results. Data preparation was carried out using the **dplyr** package in R to automate the cleaning process and maintain reproducibility.
+
+The following preprocessing steps were undertaken:
+
+- Duplicate movie records were removed.
+- Observations containing missing values for budget or revenue were excluded.
+- Movies with zero production budget or zero box office revenue were removed.
+- The `release_date` variable was converted into a standard date format.
+- A new variable, `release_year`, was created from the release date.
+- Return on Investment (ROI) was calculated to evaluate the financial performance of each movie relative to its production budget.
+
+Following these preprocessing steps, the resulting dataset contained reliable and consistent observations suitable for exploratory analysis and statistical investigation. The cleaned dataset formed the basis for all subsequent visualisations and modelling undertaken during this analytical cycle.
+
+### 3.4 Modelling and Analysis
+
+To investigate the relationship between production budget and box office revenue, a scatter plot with a fitted linear regression line was produced. This visualisation enables an assessment of whether movies with larger production budgets generally achieve higher box office revenue.
+
+
+```{r}
+```{r fig-budget-revenue, echo=FALSE, warning=FALSE, message=FALSE,
+fig.cap="Relationship between Production Budget and Box Office Revenue",
+fig.width=8, fig.height=6}
+
+ggplot(cycle1,
+       aes(x = budget,
+           y = revenue)) +
+  geom_point(
+    alpha = 0.35,
+    size = 1.5,
+    colour = "steelblue"
+  ) +
+  geom_smooth(
+    method = "lm",
+    colour = "darkred",
+    linewidth = 1,
+    se = TRUE
+  ) +
+  scale_x_continuous(labels = scales::label_number(scale = 1e-6, suffix = "M")) +
+  scale_y_continuous(labels = scales::label_number(scale = 1e-6, suffix = "M")) +
+  labs(
+    title = "Relationship between Production Budget and Box Office Revenue",
+    x = "Production Budget (Million USD)",
+    y = "Box Office Revenue (Million USD)"
+  ) +
+  theme_minimal(base_size = 13) +
+  theme(
+    plot.title = element_text(face = "bold", hjust = 0.5),
+    axis.title = element_text(face = "bold"),
+    panel.grid.minor = element_blank()
+  )
+```
+```
+
+
+The scatter plot indicates a strong positive relationship between production budget and revenue. This is supported by the Pearson correlation coefficient of **0.7565**, suggesting that films with larger production budgets generally generate higher box office revenue. Although some variability exists, the overall trend demonstrates that increased investment is associated with greater commercial success.
+
+Return on Investment (ROI) was then calculated to examine the financial efficiency of movie investments.
+
+```{r fig-roi, echo=FALSE, warning=FALSE, message=FALSE, fig.cap="Figure 2. Distribution of Return on Investment", fig.width=7, fig.height=5}
+ggplot(cycle1,
+       aes(x = ROI)) +
+  geom_histogram(bins = 40) +
+  labs(
+    title = "Distribution of Return on Investment",
+    x = "ROI",
+    y = "Number of Movies"
+  )
+```
+
+The ROI distribution shows that most movies achieved relatively modest returns, while a smaller number of movies generated exceptionally high returns. This highlights the financial uncertainty associated with movie production and suggests that higher production budgets do not always guarantee proportionally higher financial returns.
+
+### Top 10 Highest Revenue Movies
+
+To provide additional insight into commercial success, the ten highest-grossing movies in the dataset were identified. These films represent the strongest financial performers and provide examples of successful box office outcomes.
+
+```{r table-top10, echo=FALSE}
+knitr::kable(
+  top10,
+  caption = "Table 1. Top 10 Highest Revenue Movies"
+)
+```
+
+Table 1 shows the highest-grossing movies included in the dataset. Although these films generally had substantial production budgets, their Return on Investment (ROI) varies considerably. This suggests that while higher budgets are often associated with greater box office revenue, they do not always produce the highest financial returns relative to the initial investment.
+
+## 3.5 Evaluation
+
+The first CRISP-DM cycle successfully addressed the business question by examining the relationship between production budget and box office revenue. The scatter plot and Pearson correlation coefficient (**0.7565**) demonstrated a strong positive association, indicating that films with larger production budgets generally achieve higher box office revenue.
+
+The ROI analysis and the list of the highest-grossing movies further highlighted that financial success cannot be explained by production budget alone. While higher-budget films frequently generated greater revenue, their return on investment varied considerably, suggesting that efficient financial performance depends on additional factors.
+
+From a business perspective, these findings indicate that production budget should be considered alongside other variables such as audience reception, marketing strategy, release timing, franchise popularity, and genre. Therefore, a second CRISP-DM cycle is undertaken to investigate whether audience ratings and popularity provide additional insight into movie success.
+
+Overall, the first analytical cycle achieved its objective by providing evidence that production budget is an important predictor of commercial performance while demonstrating the value of combining financial and audience-based analyses for strategic decision-making.
+
+# 4. CRISP-DM Cycle 2 – Audience Reception Analysis
+
+## 4.1 Business Understanding
+
+Following the commercial performance analysis undertaken in CRISP-DM Cycle 1, the second analytical cycle focuses on audience reception. While box office revenue reflects financial success, audience ratings and popularity provide valuable insight into how movies are perceived by viewers. Understanding this relationship enables production companies to evaluate whether positive audience reception contributes to greater public interest.
+
+The business question addressed during this analytical cycle is:
+
+> **Do movies with higher audience ratings also achieve greater popularity?**
+
+Answering this question provides stakeholders with additional evidence that can support future production, marketing, and investment decisions by identifying whether audience satisfaction is associated with increased popularity.
+
+## 4.2 Data Understanding
+
+The second analytical cycle uses the same cleaned TMDb dataset prepared during Cycle 1 but focuses on variables related to audience reception. The primary variables selected for analysis are:
+
+- **Vote Average** – the average audience rating assigned to each movie.
+- **Popularity** – a popularity score representing audience interest and engagement.
+- **Runtime** – included to ensure consistency with the prepared dataset.
+
+Initial exploration showed noticeable variation in both popularity and audience ratings. While several movies achieved very high audience ratings, others became highly popular despite receiving only moderate ratings. This suggests that popularity may be influenced by additional factors beyond audience ratings alone.
+
+## 4.3 Data Preparation
+
+Prior to modelling, observations containing missing or zero values for audience ratings, popularity, and runtime were removed to improve data quality and ensure reliable statistical analysis.
+
+The cleaned dataset was then used to investigate the relationship between audience ratings and popularity using graphical visualisation, descriptive statistics, and correlation analysis. The same reproducible workflow established during Cycle 1 was maintained throughout this analytical cycle to ensure consistency across the project.
+
+## 4.4 Modelling and Analysis
+
+To investigate the relationship between audience ratings and movie popularity, a scatter plot with a fitted linear regression line was produced. This visualisation allows the relationship between audience ratings and popularity to be examined.
+
+```{r fig-rating-popularity, echo=FALSE, warning=FALSE, message=FALSE, fig.cap="Figure 3. Relationship between Popularity and Audience Rating", fig.width=7, fig.height=5}
+ggplot(cycle2,
+       aes(x = popularity,
+           y = vote_average)) +
+  geom_point(alpha = 0.30) +
+  geom_smooth(method = "lm") +
+  labs(
+    title = "Popularity vs Audience Rating",
+    x = "Popularity",
+    y = "Audience Rating"
+  )
+```
+The scatter plot illustrates the relationship between audience ratings and movie popularity. While a positive trend can be observed, the data points are widely dispersed, suggesting that audience ratings alone do not fully explain a movie's popularity. Other factors such as marketing, franchise recognition, release timing, and media attention are also likely to influence popularity.
+
+The calculated Pearson correlation coefficient between audience rating and popularity was **0.0438**, indicating an extremely weak positive relationship. This suggests that highly rated movies are not necessarily the most popular. Therefore, popularity appears to be influenced by a wider range of factors beyond audience ratings alone, including marketing activities, franchise recognition, release strategy, and media exposure.
+
+Audience ratings were then examined separately using a histogram to understand their overall distribution across the dataset.
+
+```{r fig-rating-distribution, echo=FALSE, warning=FALSE, message=FALSE, fig.cap="Figure 4. Distribution of Audience Ratings", fig.width=7, fig.height=5}
+ggplot(cycle2,
+       aes(x = vote_average)) +
+  geom_histogram(bins = 30) +
+  labs(
+    title = "Distribution of Audience Ratings",
+    x = "Audience Rating",
+    y = "Number of Movies"
+  )
+```
+
+The histogram shows that most movies received audience ratings within the middle range, while comparatively few movies achieved exceptionally high or exceptionally low ratings. This indicates that audience ratings are generally concentrated around average values rather than being evenly distributed across the rating scale.
+
+### Top 10 Highest Rated Movies
+
+To further investigate audience reception, the ten highest-rated movies in the dataset were identified.
+
+```{r table-top-rated, echo=FALSE}
+knitr::kable(
+  topRated,
+  caption = "Table 2. Top 10 Highest Rated Movies"
+)
+```
+
+Table 2 presents the highest-rated movies within the dataset together with their popularity scores and runtimes. The results demonstrate that movies receiving the highest audience ratings do not always correspond to those with the greatest popularity, reinforcing the weak relationship identified through the correlation analysis.
+
+## 4.5 Evaluation
+
+The second CRISP-DM cycle investigated the relationship between audience ratings and movie popularity. Unlike the strong relationship observed between production budget and box office revenue in Cycle 1, the results of this analysis revealed only a very weak positive correlation (**0.0438**) between audience ratings and popularity.
+
+The graphical analysis and descriptive statistics suggest that audience ratings alone are not reliable predictors of popularity. While highly rated movies may achieve commercial recognition, popularity is also influenced by external factors such as marketing campaigns, franchise value, media coverage, release timing, and audience awareness.
+
+From a stakeholder perspective, these findings demonstrate that evaluating movie success requires consideration of both financial performance and audience engagement. Consequently, production companies should avoid relying solely on audience ratings when assessing potential commercial success.
+
+Overall, the second analytical cycle complements the findings from Cycle 1 by demonstrating that movie popularity is determined by multiple interacting factors rather than audience ratings alone.
+
+# 5. Deployment and Practical Implications
+
+The findings from both analytical cycles provide useful insights for stakeholders within the film industry. The first analytical cycle demonstrated that production budget has a strong positive relationship with box office revenue, while the second cycle showed that audience ratings have only a weak relationship with movie popularity.
+
+These findings suggest that movie studios and production companies should avoid relying on a single performance indicator when making investment decisions. Instead, financial measures, audience reception, marketing activities, franchise value, genre, and release strategy should be considered together when evaluating future projects.
+
+The reproducible workflow developed using ProjectTemplate, R Markdown, Git, and the tidyverse enables the analysis to be repeated easily as new movie data become available. This provides an efficient framework for supporting future evidence-based decision-making within the film industry.
+
+# 6. Conclusion
+
+This project applied the CRISP-DM methodology to investigate factors influencing movie success using data obtained from The Movie Database (TMDb). Two complete analytical cycles were conducted to address different business questions relevant to stakeholders within the film industry.
+
+The first analytical cycle demonstrated a strong positive relationship between production budget and box office revenue, indicating that higher production budgets are generally associated with greater commercial success. However, the Return on Investment analysis also showed that larger budgets do not always produce proportionally greater financial returns.
+
+The second analytical cycle examined the relationship between audience ratings and movie popularity. The results revealed only a very weak positive relationship, suggesting that popularity is influenced by multiple external factors beyond audience ratings alone.
+
+Overall, the project demonstrates the value of combining financial analysis with audience engagement measures when evaluating movie performance. The use of ProjectTemplate, Git, R Markdown, dplyr, and ggplot2 provided a structured, reproducible, and transparent analytical workflow, ensuring that the analysis can be repeated and extended using future movie datasets.
